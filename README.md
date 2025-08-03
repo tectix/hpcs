@@ -1,37 +1,29 @@
 # HPCS - High-Performance Cache System
 
-A distributed cache system written in Go.
-
-## Current Status
-
-Basic foundation implemented:
-- TCP server with connection handling
-- Thread-safe cache engine
-- LRU and LFU eviction policies  
-- Consistent hashing implementation
-- Configuration and logging systems
+A distributed cache system written in Go with Redis protocol compatibility.
 
 ## Quick Start
 
 ```bash
-# Build the server
+# Build and run
 make build
+make run-server
 
-# Run with default configuration
-./bin/hpcs-server --config configs/config.yaml
-
-# Server listens on localhost:6379
+# Test with redis-cli
+redis-cli -h localhost -p 6379 ping
+redis-cli -h localhost -p 6379 set foo bar
+redis-cli -h localhost -p 6379 get foo
 ```
 
 ## Development
 
 ```bash
-# Install dependencies
-make deps
-
-# Build
-make build
-
-# Clean
-make clean
+make deps     # Install dependencies
+make build    # Build binary
+make test     # Run tests
+make clean    # Clean build files
 ```
+
+## Configuration
+
+Server settings are configured via `configs/config.yaml`. Supports environment variable overrides with `HPCS_` prefix.
