@@ -44,6 +44,15 @@ run-server:
 	$(GOBUILD) -o $(SERVER_BINARY) ./cmd/hpcs-server
 	./$(SERVER_BINARY) --config configs/config.yaml
 
+test-client:
+	go run test/simple_client.go
+
+test-integration: build
+	./$(SERVER_BINARY) --config configs/config.yaml &
+	sleep 2
+	go run test/simple_client.go
+	pkill -f hpcs-server || true
+
 deps:
 	$(GOMOD) download
 	$(GOMOD) tidy
