@@ -2,7 +2,6 @@ package logger
 
 import (
 	"fmt"
-	"os"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -22,14 +21,12 @@ func New(cfg config.LoggingConfig) (*zap.Logger, error) {
 		return nil, fmt.Errorf("unsupported log format: %s", cfg.Format)
 	}
 
-	// Set log level
 	level, err := zapcore.ParseLevel(cfg.Level)
 	if err != nil {
 		return nil, fmt.Errorf("invalid log level: %s", cfg.Level)
 	}
 	zapConfig.Level = zap.NewAtomicLevelAt(level)
 
-	// Set output
 	switch cfg.Output {
 	case "stdout":
 		zapConfig.OutputPaths = []string{"stdout"}
@@ -44,10 +41,8 @@ func New(cfg config.LoggingConfig) (*zap.Logger, error) {
 		return nil, fmt.Errorf("unsupported log output: %s", cfg.Output)
 	}
 
-	// Error output always goes to stderr
 	zapConfig.ErrorOutputPaths = []string{"stderr"}
 
-	// Add caller information in development mode
 	if cfg.Format == "console" {
 		zapConfig.Development = true
 	}
