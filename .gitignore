@@ -44,3 +44,6 @@ config.local.yaml
 config.*.yaml
 !config.yaml
 !configs/config.yaml
+
+# Local development 
+.local/
