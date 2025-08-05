@@ -54,10 +54,8 @@ func Load(configPath string) (*Config, error) {
 	viper.SetConfigFile(configPath)
 	viper.SetConfigType("yaml")
 	
-	// Set defaults
 	setDefaults()
 	
-	// Enable environment variable support
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("HPCS")
 	

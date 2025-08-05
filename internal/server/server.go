@@ -13,6 +13,7 @@ import (
 
 	"github.com/tectix/hpcs/internal/cache"
 	"github.com/tectix/hpcs/internal/config"
+	"github.com/tectix/hpcs/internal/metrics"
 	"github.com/tectix/hpcs/internal/protocol"
 )
 
@@ -50,6 +51,18 @@ func (s *Server) Start() error {
 	
 	s.listener = listener
 	s.logger.Info("Server starting", zap.String("address", addr))
+	
+	if s.cfg.Metrics.Enabled {
+		metricsAddr := fmt.Sprintf(":%d", s.cfg.Metrics.Port)
+		s.wg.Add(1)
+		go func() {
+			defer s.wg.Done()
+			s.logger.Info("Metrics server starting", zap.String("address", metricsAddr))
+			if err := metrics.StartMetricsServer(metricsAddr); err != nil {
+				s.logger.Error("Metrics server error", zap.Error(err))
+			}
+		}()
+	}
 	
 	s.wg.Add(1)
 	go s.acceptConnections()
@@ -90,6 +103,10 @@ func (s *Server) acceptConnections() {
 func (s *Server) handleConnection(conn net.Conn) {
 	defer s.wg.Done()
 	defer conn.Close()
+	defer metrics.DecrementActiveConnections()
+	
+	metrics.IncrementTotalConnections()
+	metrics.IncrementActiveConnections()
 	
 	s.logger.Debug("New connection", zap.String("remote", conn.RemoteAddr().String()))
 	
@@ -100,6 +117,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 			conn.SetReadDeadline(time.Now().Add(s.cfg.Server.ReadTimeout))
 		}
 		
+		start := time.Now()
 		value, err := parser.Parse()
 		if err != nil {
 			if err == io.EOF {
@@ -119,6 +137,12 @@ func (s *Server) handleConnection(conn net.Conn) {
 		if err != nil {
 			s.logger.Debug("Write error", zap.Error(err))
 			break
+		}
+		
+		duration := time.Since(start)
+		if len(value.Array) > 0 {
+			operation := strings.ToLower(value.Array[0].Str)
+			metrics.RecordRequestDuration(operation, duration)
 		}
 	}
 }

@@ -1,11 +1,10 @@
-.PHONY: build test clean run-server run-client lint fmt vet deps benchmark docker
+.PHONY: build test clean run-server test-client benchmark load-test performance-test deps fmt vet lint
 
 # Go parameters
 GOCMD=go
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
-GOGET=$(GOCMD) get
 GOMOD=$(GOCMD) mod
 GOFMT=gofmt
 GOLINT=golangci-lint
@@ -33,7 +32,7 @@ test-coverage:
 	$(GOCMD) tool cover -html=coverage.out -o coverage.html
 
 benchmark:
-	$(GOTEST) -bench=. -benchmem ./...
+	$(GOTEST) -bench=. -benchmem ./internal/cache/
 
 clean:
 	$(GOCLEAN)
@@ -53,6 +52,14 @@ test-integration: build
 	go run test/simple_client.go
 	pkill -f hpcs-server || true
 
+load-test: build
+	./$(SERVER_BINARY) --config configs/config.yaml &
+	sleep 2
+	go run test/loadtest/main.go -connections=50 -duration=30s
+	pkill -f hpcs-server || true
+
+performance-test: benchmark load-test
+
 deps:
 	$(GOMOD) download
 	$(GOMOD) tidy
@@ -65,22 +72,3 @@ vet:
 
 lint:
 	$(GOLINT) run
-
-# Docker targets
-docker-build:
-	docker build -t hpcs:$(VERSION) .
-
-docker-run:
-	docker run -p 6379:6379 -p 8080:8080 hpcs:$(VERSION)
-
-# Performance testing
-load-test:
-	go run test/loadtest/main.go
-
-# Development helpers
-dev-setup:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-	go install github.com/air-verse/air@latest
-
-watch:
-	air -c .air.toml

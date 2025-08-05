@@ -29,8 +29,8 @@ func New(maxSize int64) *Cache {
 }
 
 func (c *Cache) Get(key string) ([]byte, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	
 	entry, exists := c.entries[key]
 	if !exists {
@@ -38,7 +38,8 @@ func (c *Cache) Get(key string) ([]byte, bool) {
 	}
 	
 	if entry.ExpiresAt > 0 && time.Now().Unix() > entry.ExpiresAt {
-		go c.Delete(key)
+		delete(c.entries, key)
+		c.size -= int64(len(entry.Value))
 		return nil, false
 	}
 	
