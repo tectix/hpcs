@@ -8,6 +8,10 @@ import (
 	"github.com/tectix/hpcs/internal/cache"
 )
 
+type CommandExecutor interface {
+	Execute(cmd Value) Value
+}
+
 type CommandHandler struct {
 	cache *cache.Cache
 }

@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/tectix/hpcs/internal/cache"
+	"github.com/tectix/hpcs/internal/cluster"
 	"github.com/tectix/hpcs/internal/config"
 	"github.com/tectix/hpcs/internal/metrics"
 	"github.com/tectix/hpcs/internal/protocol"
@@ -22,6 +23,7 @@ type Server struct {
 	logger   *zap.Logger
 	cache    *cache.Cache
 	handler  *protocol.CommandHandler
+	cluster  *cluster.Cluster
 	listener net.Listener
 	shutdown chan struct{}
 	wg       sync.WaitGroup
@@ -32,11 +34,17 @@ func New(cfg *config.Config, logger *zap.Logger) *Server {
 	cacheInstance := cache.New(maxSize)
 	handler := protocol.NewCommandHandler(cacheInstance)
 	
+	selfAddr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
+	selfID := fmt.Sprintf("node_%s", selfAddr)
+	
+	clusterInstance := cluster.New(selfID, selfAddr, &cfg.Cluster, logger)
+	
 	return &Server{
 		cfg:      cfg,
 		logger:   logger,
 		cache:    cacheInstance,
 		handler:  handler,
+		cluster:  clusterInstance,
 		shutdown: make(chan struct{}),
 	}
 }
@@ -62,6 +70,10 @@ func (s *Server) Start() error {
 				s.logger.Error("Metrics server error", zap.Error(err))
 			}
 		}()
+	}
+	
+	if err := s.cluster.Start(); err != nil {
+		return fmt.Errorf("failed to start cluster: %w", err)
 	}
 	
 	s.wg.Add(1)

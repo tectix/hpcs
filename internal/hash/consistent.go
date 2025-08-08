@@ -2,7 +2,6 @@ package hash
 
 import (
 	"crypto/sha1"
-	"fmt"
 	"sort"
 	"strconv"
 )
