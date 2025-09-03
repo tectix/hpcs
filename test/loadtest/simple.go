@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func main() {
+func runSimpleTest() {
 	fmt.Println("Simple load test - 10 connections, 10 seconds")
 	
 	var ops int64

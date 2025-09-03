@@ -37,13 +37,13 @@ func (c *Cache) Get(key string) ([]byte, bool) {
 		return nil, false
 	}
 	
-	if entry.ExpiresAt > 0 && time.Now().Unix() > entry.ExpiresAt {
+	if entry.ExpiresAt > 0 && time.Now().UnixNano() > entry.ExpiresAt {
 		delete(c.entries, key)
 		c.size -= int64(len(entry.Value))
 		return nil, false
 	}
 	
-	entry.LastUsed = time.Now().Unix()
+	entry.LastUsed = time.Now().UnixNano()
 	entry.UseCount++
 	
 	return entry.Value, true
@@ -53,10 +53,10 @@ func (c *Cache) Set(key string, value []byte, ttl time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	
-	now := time.Now().Unix()
+	now := time.Now().UnixNano()
 	var expiresAt int64
 	if ttl > 0 {
-		expiresAt = now + int64(ttl.Seconds())
+		expiresAt = now + int64(ttl.Nanoseconds())
 	}
 	
 	if existing, exists := c.entries[key]; exists {
